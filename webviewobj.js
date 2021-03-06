@@ -55,20 +55,23 @@ outlineScene.add(modelgroupOutline);
 // 用于卷积描边的渲染（需要先渲染一个maskScene，再输出给edgeScene，最后与原始渲染结果叠加，共 3 pass）
 let maskScene = new THREE.Scene();
 maskScene.add(modelgroupMask);
+// 离屏渲染的帧缓冲区
+// 白色皮卡丘
 let maskBuffer = new THREE.WebGLRenderTarget(canvasW, canvasH, {
-    minFilter: THREE.LinearFilter,
-    magFilter: THREE.LinearFilter,
-    format: THREE.RGBAFormat,
-    antialias: true
+    // minFilter: THREE.LinearFilter,
+    // magFilter: THREE.LinearFilter,
+    // format: THREE.RGBAFormat,
+    // antialias: true
 });
-maskBuffer.texture.generateMipmaps = false;
+maskBuffer.texture.generateMipmaps = false; // 是否为纹理生成mipmap
+// 自定义顶点着色器对象
 let edgeMaterial = new THREE.ShaderMaterial({
     vertexShader: vertexShaderEdge,
     fragmentShader: fragShaderEdge,
     depthTest: false,
     uniforms: {
         maskTexture: {
-            value: maskBuffer.texture
+            value: maskBuffer.texture // 白色皮卡丘
         },
         texSize: {
             value: new THREE.Vector2(canvasW, canvasH)
@@ -99,24 +102,25 @@ function animate() {
     renderer.clear();
     let oldRenderTarget = renderer.getRenderTarget();
 
-    if (outLineType == 2) {
+    if (outLineType == 2) { // 卷积边缘检测
         // 改变renderTarget，从屏幕到maskBuffer纹理
         renderer.setRenderTarget(maskBuffer);
         renderer.clear();
+        // 渲染出一个白色皮卡丘放到maskBuffer，最终渲染的图片放在maskBuffer.texture
         renderer.render(maskScene, camera);
         // 重置renderTarget，交还给屏幕
         renderer.setRenderTarget(oldRenderTarget);
         // 渲染edgeScene，其中输入纹理为maskBuffer
-        renderer.render(edgeScene, edgeCamera);
+        renderer.render(edgeScene, edgeCamera); // 拿到黑边皮卡丘
         renderer.clearDepth();
         // 渲染原始图像
         renderer.render(scene, camera);
-    } else if (outLineType == 1) {
+    } else if (outLineType == 1) { // 法线扩张
         // 先渲染法线扩张后的黑底，再渲染原始图像
         renderer.render(outlineScene, camera);
-        renderer.clearDepth();
+        renderer.clearDepth(); // 清除缓冲区
         renderer.render(scene, camera);
-    } else {
+    } else { // 不描边
         renderer.render(scene, camera);
     }
 }
@@ -125,6 +129,7 @@ animate();
 // 准备几何体
 let myOBJLoader = new OBJLoader();
 myOBJLoader.load('./models/pikachiu-obj/pikachiu.obj', function (obj) {
+    console.log('obj: ', obj);
     obj.scale.set(15, 15, 15); //放大obj组对象
     const textureBase = new THREE.TextureLoader().load("./models/pikachiu-obj/initialShadingGroup_Base_Color.png");
     textureBase.magFilter = THREE.NearestFilter;
