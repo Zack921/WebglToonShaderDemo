@@ -1,6 +1,7 @@
+// 卡通渲染只是非真实感渲染中一个很小的子集
 let vertexShaderToon = `
         uniform vec3 color;
-        uniform vec3 light;
+        uniform vec3 light; // 光源位置
         varying vec3 vColor;
         varying vec3 vPosition;
         varying vec2 vUv;
@@ -16,9 +17,10 @@ let vertexShaderToon = `
         
             // 转换成视图坐标系（摄像机位置即坐标原点）下的光源坐标/顶点坐标/法线坐标，传递给fs
             // viewLight = normalize( (modelViewMatrix * vec4(light, 1.0)).xyz );
-            viewLight = normalize(vec4(light, 1.0).xyz);
+            viewLight = normalize(vec4(light, 1.0).xyz); // 单位化光源方向
             viewPosition = ( modelViewMatrix * vec4(position, 1.0)).xyz;
-            viewNormal = normalize(normalMatrix * normal);
+            // 法向量表示的是一个方向，而光源位置表示的是一个坐标。如果用法向量乘以  modelViewMatrix 得到的结果就可能不再垂直于面片
+            viewNormal = normalize(normalMatrix * normal); // normalMatrix 是modelViewMatrix的逆转置矩阵
         
             gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
         
@@ -39,10 +41,15 @@ let fragShaderToon = `
         uniform int isDimtoon;
         uniform mat4 modelMatrix;
         void main() {        
+            // Cel Shading 算法是卡通渲染（Toon Shading）的一种形式，可以有若干种变形
+            // 1.指定一个颜色作为苹果的基础颜色；
+            // 2.通过光照计算得出每个片元对应的亮度；
+            // 3.将亮度由连续的映射到离散的若干个亮度值；
+            // 4.将亮度值和基础颜色结合得到片元颜色。
             // 计算基础色
-            vec3 albedoColor = texture2D(_MainTex, vUv).rgb;
-            // 计算卡通渲染下的阶梯阴影
-            float diffuse = dot(viewLight, viewNormal);
+            vec3 albedoColor = texture2D(_MainTex, vUv).rgb; // 片元纹理颜色
+            // 计算卡通渲染下的阶梯阴影 - 阶梯式的亮度值
+            float diffuse = dot(viewLight, viewNormal); // 计算每个片元的亮度值
             if (diffuse > 0.7) {
                 diffuse = 1.0;
             }
@@ -55,33 +62,33 @@ let fragShaderToon = `
             
         
             // 计算高光反射值（Phong模型）
-            float shininessVal=1.0;
-            vec3  specularColor = vec3(1.0, 1.0, 1.0);
-            vec3 L = viewLight;
-            vec3 R = reflect(-viewLight, viewNormal);   // 计算光源沿法线反射后的方向
-            vec3 V = normalize(-viewPosition); // 视图坐标系下，坐标的负值即为视线方向
-            float specAngle = max(dot(R, V), 0.0); // 两个方向的夹角（点积）即为高光系数，越接近平行，高光越强烈
-            float specularFactor = pow(specAngle, shininessVal);
-            // 卡通渲染阶梯化处理
-            if (specularFactor > 0.8) {
-                specularFactor = 0.5;
-            }
-            else {
-                specularFactor = 0.0;
-            }
-            if(hasSkinMap == 1){
-                float skinMask = texture2D(_skinMap, vUv).r;
-                if(skinMask == 1.0){
-                    specularFactor = 0.0;
-                }
-            }
+            // float shininessVal=1.0;
+            // vec3  specularColor = vec3(1.0, 1.0, 1.0);
+            // vec3 L = viewLight;
+            // vec3 R = reflect(-viewLight, viewNormal);   // 计算光源沿法线反射后的方向
+            // vec3 V = normalize(-viewPosition); // 视图坐标系下，坐标的负值即为视线方向
+            // float specAngle = max(dot(R, V), 0.0); // 两个方向的夹角（点积）即为高光系数，越接近平行，高光越强烈
+            // float specularFactor = pow(specAngle, shininessVal);
+            // // 卡通渲染阶梯化处理
+            // if (specularFactor > 0.8) {
+            //     specularFactor = 0.5;
+            // }
+            // else {
+            //     specularFactor = 0.0;
+            // }
+            // if(hasSkinMap == 1){
+            //     float skinMask = texture2D(_skinMap, vUv).r;
+            //     if(skinMask == 1.0){
+            //         specularFactor = 0.0;
+            //     }
+            // }
         
             // 计算rim lighting
-            vec3 rimColor = vec3(1.0, 0.0, 0.0);
-            float rimFactor = 0.5;
-            float rimWidth = 1.0;
-            float rimAngle = max( dot(viewNormal, V), 0.0); // 简单计算，取视线方向和法线方向的夹角（点积），越接近垂直，越靠近模型边缘
-            float rimndotv =  max(0.0, rimWidth - rimAngle);
+            // vec3 rimColor = vec3(1.0, 0.0, 0.0);
+            // float rimFactor = 0.5;
+            // float rimWidth = 1.0;
+            // float rimAngle = max( dot(viewNormal, V), 0.0); // 简单计算，取视线方向和法线方向的夹角（点积），越接近垂直，越靠近模型边缘
+            // float rimndotv =  max(0.0, rimWidth - rimAngle);
             // 卡通渲染阶梯化处理
             // if (rimndotv > 0.4) {
             //     rimndotv = 1.0;
@@ -90,19 +97,20 @@ let fragShaderToon = `
             //     rimndotv = 0.0;
             // }
         
-            if(isDimtoon == 0){
-                diffuse = 1.0;
-            }
+            // if(isDimtoon == 0){
+            //     diffuse = 1.0;
+            // }
             vec3 finalColor = albedoColor * diffuse;
-            if(isHighlight == 1){
-                finalColor += specularColor * specularFactor;
-            }
-            if(isRimlight == 1){
-                finalColor += rimColor * rimndotv * rimFactor;
-            }
+            // if(isHighlight == 1){
+            //     finalColor += specularColor * specularFactor;
+            // }
+            // if(isRimlight == 1){
+            //     finalColor += rimColor * rimndotv * rimFactor;
+            // }
             gl_FragColor = vec4( finalColor, 1.0);
         }
     `
+// 通常而言，描边是为了增加对比，将物体与背景更强烈地隔离开。
 let vertexShaderOutline = `
     uniform float offset;
     void main() {

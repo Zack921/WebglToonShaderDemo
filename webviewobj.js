@@ -27,7 +27,7 @@ renderer.setSize(canvasW, canvasH);
 scene.add(modelgroup);
 
 var camera = new THREE.PerspectiveCamera(45, 500 / 500, 1, 2000);
-camera.position.y = 400;
+camera.position.z = 400;
 camera.lookAt(scene.position);
 camera.aspect = canvasW / canvasH;
 camera.updateProjectionMatrix();
@@ -89,6 +89,7 @@ let edgeMaterial = new THREE.ShaderMaterial({
 let edgeObj = new THREE.Mesh(new THREE.PlaneBufferGeometry(canvasW, canvasH), edgeMaterial);
 edgeObj.frustumCulled = false;
 // edgeScene渲染在一张平面上，不随controller转动，所以需要一个新的正交相机
+// ???
 let edgeScene = new THREE.Scene();
 edgeScene.add(edgeObj);
 var edgeCamera = new THREE.OrthographicCamera(-canvasW / 2, canvasW / 2, canvasH / 2, -canvasH / 2, 0, 1);
