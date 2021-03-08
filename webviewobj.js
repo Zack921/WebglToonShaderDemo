@@ -79,7 +79,7 @@ let edgeMaterial = new THREE.ShaderMaterial({
         color: {
             value: new THREE.Color(0.0, 0.0, 0.0)
         },
-        thickness: {
+        thickness: { // 边框粗细
             type: 'f',
             value: 1.6
         },
@@ -105,17 +105,17 @@ function animate() {
 
     if (outLineType == 2) { // 卷积边缘检测
         // 改变renderTarget，从屏幕到maskBuffer纹理
-        renderer.setRenderTarget(maskBuffer);
+        // renderer.setRenderTarget(maskBuffer);
         renderer.clear();
         // 渲染出一个白色皮卡丘放到maskBuffer，最终渲染的图片放在maskBuffer.texture
         renderer.render(maskScene, camera);
         // 重置renderTarget，交还给屏幕
         renderer.setRenderTarget(oldRenderTarget);
         // 渲染edgeScene，其中输入纹理为maskBuffer
-        renderer.render(edgeScene, edgeCamera); // 拿到黑边皮卡丘
+        // renderer.render(edgeScene, camera); // 拿到黑边皮卡丘
         renderer.clearDepth();
         // 渲染原始图像
-        renderer.render(scene, camera);
+        // renderer.render(scene, camera);
     } else if (outLineType == 1) { // 法线扩张
         // 先渲染法线扩张后的黑底，再渲染原始图像
         renderer.render(outlineScene, camera);
