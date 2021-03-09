@@ -90,6 +90,7 @@ Bone3.position.y = 40; //Bone3相对父对象Bone2位置
 
 // 所有Bone对象插入到Skeleton中，全部设置为.bones属性的元素
 var skeleton = new THREE.Skeleton([Bone1, Bone2, Bone3]); //创建骨骼系统
+console.log('Bone1: ', Bone1);
 // console.log(skeleton.bones);
 // 返回所有关节的世界坐标
 // skeleton.bones.forEach(elem => {
@@ -142,7 +143,9 @@ for ( var i = 0; i < bones.length; i ++ ) {
     folder.add( bone.scale, 'y', 0, 2 );
     folder.add( bone.scale, 'z', 0, 2 );
 
-    folder.__controllers[ 0 ].name( "position.x" );
+    folder.__controllers[ 0 ].name( "position.x" ).onChange(function (e) {
+      console.log('Bone1: ', Bone1);
+    });;
     folder.__controllers[ 1 ].name( "position.y" );
     folder.__controllers[ 2 ].name( "position.z" );
 
